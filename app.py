@@ -5,74 +5,23 @@ import time
 # 1. Page Configuration (Wide Layout)
 st.set_page_config(page_title="AI Business Analyst - By Anirudh", layout="wide")
 
-# Simple, Clean CSS for a Student Project look (Fixed Bracket Syntax)
-st.markdown("""
-    <style>
-    .big-container {
-        padding: 30px;
-        background-color: #f8f9fa;
-        border-radius: 12px;
-        margin-bottom: 25px;
-        border-left: 5px solid #007bff;
-    }
-    .instruction-card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-        margin-bottom: 15px;
-    }
-    .creator-footer {
-        text-align: center;
-        padding: 15px;
-        background-color: #343a40;
-        color: white;
-        font-size: 16px;
-        font-weight: 500;
-        border-radius: 8px;
-        margin-top: 50px;
-    }
-    </style>
-""", unsafe_allowed_html=True)
-
-# --- SIDEBAR ---
-st.sidebar.title("📊 Tool Settings")
-st.sidebar.markdown("---")
-timeline = st.sidebar.selectbox("Select Timeline", ["Current Month", "Last 3 Months", "Full Year Data"])
-st.sidebar.markdown("---")
-st.sidebar.info("💡 **How it works:** This tool scans your CSV file columns (like Item, Price, Profit) to automatically run calculations and generate business advice.")
-
-# --- MAIN PAGE HEADER ---
-st.markdown('<div class="big-container"><h1>📊 AI-Driven Business Analyst Dashboard</h1>'
-            '<p style="font-size:16px; color:#495057;">Upload your sales dataset to get instant automated insights, financial graphs, and strategic advice.</p></div>', unsafe_allowed_html=True)
+# --- MAIN PAGE HEADER (Clean and Safe) ---
+st.title("📊 AI-Driven Business Analyst Dashboard")
+st.write("Upload your sales dataset to get instant automated insights, financial graphs, and strategic advice.")
+st.markdown("---")
 
 # --- INSTRUCTIONS SECTION ---
 st.markdown("### 🛠️ How to use this tool:")
 col_step1, col_step2, col_step3 = st.columns(3)
 
 with col_step1:
-    st.markdown("""
-    <div class="instruction-card">
-        <h5>1. Upload CSV File</h5>
-        <p style="color:#6c757d; font-size:14px;">Apne store ki sales register digital sheet ko <b>.CSV format</b> mein neeche upload karein.</p>
-    </div>
-    """, unsafe_allowed_html=True)
+    st.info("##### 1. Upload CSV File\nApne store ki sales register digital sheet ko **.CSV format** mein neeche upload karein.")
 
 with col_step2:
-    st.markdown("""
-    <div class="instruction-card">
-        <h5>2. Automatic Processing</h5>
-        <p style="color:#6c757d; font-size:14px;">Humara Python code aapke total revenue, profit aur top items ko automatically calculate karega.</p>
-    </div>
-    """, unsafe_allowed_html=True)
+    st.info("##### 2. Automatic Processing\nHumara Python code aapke total revenue, profit aur top items ko automatically calculate karega.")
 
 with col_step3:
-    st.markdown("""
-    <div class="instruction-card">
-        <h5>3. Get Insights</h5>
-        <p style="color:#6c757d; font-size:14px;">Neeche real charts aur ek clear Hinglish report ban kar aayegi jise aap business grow karne ke liye use kar sakte hain.</p>
-    </div>
-    """, unsafe_allowed_html=True)
+    st.info("##### 3. Get Insights\nNeeche real charts aur ek clear Hinglish report ban kar aayegi jise aap use kar sakte hain.")
 
 st.markdown("<br>", unsafe_allowed_html=True)
 
@@ -99,19 +48,17 @@ if uploaded_file is not None:
         item_col = [c for c in df.columns if any(k in c for k in ['item', 'product', 'name', 'sku'])]
 
         # Core Calculations
-        total_revenue = df[rev_col].sum().values[0] if rev_col else 26787.00
-        total_units = df[qty_col].sum().values[0] if qty_col else len(df) * 12
-        total_profit = df[profit_col].sum().values[0] if profit_col else total_revenue * 0.53
+        total_revenue = float(df[rev_col].sum()) if rev_col else 26787.00
+        total_units = int(df[qty_col].sum()) if qty_col else len(df) * 12
+        total_profit = float(df[profit_col].sum()) if profit_col else total_revenue * 0.53
         total_orders = len(df)
-        op_cost = total_revenue - total_profit
         margin_pct = (total_profit / total_revenue) * 100 if total_revenue > 0 else 53.3
-        aov = total_revenue / total_orders if total_orders > 0 else total_revenue / 5
         
         top_item = "Oversized Cotton Tee"
         worst_item = "Linen Casual Shirt"
         if item_col and qty_col:
             try:
-                prod_summary = df.groupby(item_col[0])[qty_col[0]].sum()
+                prod_summary = df.groupby(item_col)[qty_col].sum()
                 top_item = prod_summary.idxmax()
                 worst_item = prod_summary.idxmin()
             except: pass
@@ -124,7 +71,7 @@ if uploaded_file is not None:
         with m_col2:
             st.metric(label="💵 NET PROFIT", value=f"INR {total_profit:,.2f}", delta=f"{margin_pct:.1f}% Margin")
         with m_col3:
-            st.metric(label="🛍️ TOTAL ORDERS", value=f"{total_orders:,} ( {total_units:,} Items Sold )")
+            st.metric(label="🛍️ TOTAL ORDERS", value=f"{total_orders:,} ({total_units:,} Items Sold)")
 
         # Charts Section
         st.markdown("---")
@@ -132,13 +79,13 @@ if uploaded_file is not None:
         with v1:
             st.markdown("#### **Product Revenue Contribution**")
             if item_col and rev_col:
-                st.bar_chart(df.groupby(item_col[0])[rev_col[0]].sum().sort_values(ascending=False).head(5))
+                st.bar_chart(df.groupby(item_col)[rev_col].sum().sort_values(ascending=False).head(5))
             else:
                 st.bar_chart({"Oversized Cotton Tee": 12500, "Regular Fit Denim": 8400, "Linen Casual Shirt": 5887})
         with v2:
             st.markdown("#### **Units Sold Analysis**")
             if item_col and qty_col:
-                st.area_chart(df.groupby(item_col[0])[qty_col[0]].sum().sort_values(ascending=False).head(5))
+                st.area_chart(df.groupby(item_col)[qty_col].sum().sort_values(ascending=False).head(5))
             else:
                 st.area_chart({"Oversized Cotton Tee": 80, "Regular Fit Denim": 45, "Linen Casual Shirt": 22})
 
@@ -154,11 +101,12 @@ if uploaded_file is not None:
                 f"2. **Cost Optimization**: Operational leaks aur variable costs ko trace down karein taaki profit targets ko next month **12% up** push kiya ja sake.")
 
     except Exception as e:
-        st.error(f"❌ Error reading dataset columns. Make sure your CSV contains standard headers like 'Item Name', 'Price/Revenue', and 'Quantity'.")
+        st.error("❌ Error reading dataset columns. Make sure your CSV contains standard headers like Item Name, Price, and Quantity.")
 else:
     # Empty State Padding
     st.info("💡 Kripya upar diye gaye button par click karke Sales CSV file upload karein taaki calculations shuru ho sakein.")
-    st.markdown("<br><br><br><br><br>", unsafe_allowed_html=True)
+    st.markdown("<br><br><br><br><br><br><br><br>", unsafe_allowed_html=True)
 
-# --- THE STUDENT CREATOR FOOTER ---
-st.markdown('<div class="creator-footer">🚀 Built with ❤️ by Anirudh (Student Developer) | Running on Free Tier Cloud Hosting Engine</div>', unsafe_allowed_html=True)
+# --- THE STUDENT CREATOR FOOTER (Safe and Clean) ---
+st.markdown("---")
+st.success("🚀 **Built with ❤️ by Anirudh (Student Developer)** | Running on Free Tier Cloud Hosting Engine")
