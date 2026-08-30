@@ -5,7 +5,7 @@ import time
 # 1. Page Configuration (Wide Layout)
 st.set_page_config(page_title="AI Business Analyst - By Anirudh", layout="wide")
 
-# Simple, Clean CSS for a Student Project look
+# Simple, Clean CSS for a Student Project look (Fixed Bracket Syntax)
 st.markdown("""
     <style>
     .big-container {
@@ -13,7 +13,7 @@ st.markdown("""
         background-color: #f8f9fa;
         border-radius: 12px;
         margin-bottom: 25px;
-        border-left: 5px solid #007bff; /* Simple Friendly Blue */
+        border-left: 5px solid #007bff;
     }
     .instruction-card {
         background-color: #ffffff;
@@ -22,11 +22,10 @@ st.markdown("""
         border: 1px solid #e9ecef;
         margin-bottom: 15px;
     }
-    /* Creator Signature - Genuine Student Style */
     .creator-footer {
         text-align: center;
         padding: 15px;
-        background-color: #343a40; /* Dark Neutral Gray */
+        background-color: #343a40;
         color: white;
         font-size: 16px;
         font-weight: 500;
@@ -100,9 +99,9 @@ if uploaded_file is not None:
         item_col = [c for c in df.columns if any(k in c for k in ['item', 'product', 'name', 'sku'])]
 
         # Core Calculations
-        total_revenue = df[rev_col].sum().values if rev_col else 26787.00
-        total_units = df[qty_col].sum().values if qty_col else len(df) * 12
-        total_profit = df[profit_col].sum().values if profit_col else total_revenue * 0.53
+        total_revenue = df[rev_col].sum().values[0] if rev_col else 26787.00
+        total_units = df[qty_col].sum().values[0] if qty_col else len(df) * 12
+        total_profit = df[profit_col].sum().values[0] if profit_col else total_revenue * 0.53
         total_orders = len(df)
         op_cost = total_revenue - total_profit
         margin_pct = (total_profit / total_revenue) * 100 if total_revenue > 0 else 53.3
@@ -112,7 +111,7 @@ if uploaded_file is not None:
         worst_item = "Linen Casual Shirt"
         if item_col and qty_col:
             try:
-                prod_summary = df.groupby(item_col)[qty_col].sum()
+                prod_summary = df.groupby(item_col[0])[qty_col[0]].sum()
                 top_item = prod_summary.idxmax()
                 worst_item = prod_summary.idxmin()
             except: pass
@@ -133,13 +132,13 @@ if uploaded_file is not None:
         with v1:
             st.markdown("#### **Product Revenue Contribution**")
             if item_col and rev_col:
-                st.bar_chart(df.groupby(item_col)[rev_col].sum().sort_values(ascending=False).head(5))
+                st.bar_chart(df.groupby(item_col[0])[rev_col[0]].sum().sort_values(ascending=False).head(5))
             else:
                 st.bar_chart({"Oversized Cotton Tee": 12500, "Regular Fit Denim": 8400, "Linen Casual Shirt": 5887})
         with v2:
             st.markdown("#### **Units Sold Analysis**")
             if item_col and qty_col:
-                st.area_chart(df.groupby(item_col)[qty_col].sum().sort_values(ascending=False).head(5))
+                st.area_chart(df.groupby(item_col[0])[qty_col[0]].sum().sort_values(ascending=False).head(5))
             else:
                 st.area_chart({"Oversized Cotton Tee": 80, "Regular Fit Denim": 45, "Linen Casual Shirt": 22})
 
@@ -161,5 +160,5 @@ else:
     st.info("💡 Kripya upar diye gaye button par click karke Sales CSV file upload karein taaki calculations shuru ho sakein.")
     st.markdown("<br><br><br><br><br>", unsafe_allowed_html=True)
 
-# --- 🚀 THE PERFECT STUDENT CREATOR FOOTER 🚀 ---
+# --- THE STUDENT CREATOR FOOTER ---
 st.markdown('<div class="creator-footer">🚀 Built with ❤️ by Anirudh (Student Developer) | Running on Free Tier Cloud Hosting Engine</div>', unsafe_allowed_html=True)
