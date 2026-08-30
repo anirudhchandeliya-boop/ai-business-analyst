@@ -5,7 +5,7 @@ import time
 # 1. Page Configuration (Wide Layout)
 st.set_page_config(page_title="AI Business Analyst - By Anirudh", layout="wide")
 
-# --- MAIN PAGE HEADER (Clean and Safe) ---
+# --- MAIN PAGE HEADER ---
 st.title("📊 AI-Driven Business Analyst Dashboard")
 st.write("Upload your sales dataset to get instant automated insights, financial graphs, and strategic advice.")
 st.markdown("---")
@@ -23,7 +23,8 @@ with col_step2:
 with col_step3:
     st.info("##### 3. Get Insights\nNeeche real charts aur ek clear Hinglish report ban kar aayegi jise aap use kar sakte hain.")
 
-st.markdown("<br>", unsafe_allowed_html=True)
+# --- SAFE SPACING (No HTML Break Error) ---
+st.write("")
 
 # --- DATA UPLOAD ZONE ---
 st.markdown("### 📥 Upload Your Dataset Here")
@@ -105,7 +106,9 @@ if uploaded_file is not None:
 else:
     # Empty State Padding
     st.info("💡 Kripya upar diye gaye button par click karke Sales CSV file upload karein taaki calculations shuru ho sakein.")
-    st.markdown("<br><br><br><br><br><br><br><br>", unsafe_allowed_html=True)
+    st.write("")
+    st.write("")
+    st.write("")
 
 # --- THE STUDENT CREATOR FOOTER (Safe and Clean) ---
 st.markdown("---")
