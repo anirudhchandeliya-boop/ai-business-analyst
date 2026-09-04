@@ -19,6 +19,20 @@ st.markdown("""
         padding: 16px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
+    /* Force readable text color on metric cards regardless of light/dark theme,
+       since the card background above stays light in both modes. */
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"],
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"] * {
+        color: #16213e !important;
+    }
+    div[data-testid="stMetric"] [data-testid="stMetricValue"],
+    div[data-testid="stMetric"] [data-testid="stMetricValue"] * {
+        color: #0f172a !important;
+    }
+    div[data-testid="stMetric"] [data-testid="stMetricDelta"],
+    div[data-testid="stMetric"] [data-testid="stMetricDelta"] * {
+        color: #15803d !important;
+    }
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
         border-radius: 8px 8px 0 0;
