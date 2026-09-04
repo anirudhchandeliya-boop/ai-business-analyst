@@ -1,3 +1,4 @@
+cat > /mnt/user-data/outputs/app.py << 'PYEOF'
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -19,37 +20,23 @@ st.markdown("""
         padding: 16px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     }
-    /* Force readable text color on metric cards regardless of light/dark theme,
-       since the card background above stays light in both modes. */
     div[data-testid="stMetric"] [data-testid="stMetricLabel"],
-    div[data-testid="stMetric"] [data-testid="stMetricLabel"] * {
-        color: #16213e !important;
-    }
+    div[data-testid="stMetric"] [data-testid="stMetricLabel"] * { color: #16213e !important; }
     div[data-testid="stMetric"] [data-testid="stMetricValue"],
-    div[data-testid="stMetric"] [data-testid="stMetricValue"] * {
-        color: #0f172a !important;
-    }
+    div[data-testid="stMetric"] [data-testid="stMetricValue"] * { color: #0f172a !important; }
     div[data-testid="stMetric"] [data-testid="stMetricDelta"],
-    div[data-testid="stMetric"] [data-testid="stMetricDelta"] * {
-        color: #15803d !important;
-    }
+    div[data-testid="stMetric"] [data-testid="stMetricDelta"] * { color: #15803d !important; }
     .stTabs [data-baseweb="tab-list"] { gap: 8px; }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px 8px 0 0;
-        padding: 8px 16px;
-        font-weight: 600;
-    }
-    .stButton>button, .stDownloadButton>button {
-        border-radius: 8px;
-        font-weight: 600;
+    .stTabs [data-baseweb="tab"] { border-radius: 8px 8px 0 0; padding: 8px 16px; font-weight: 600; }
+    .stButton>button, .stDownloadButton>button { border-radius: 8px; font-weight: 600; }
+    .exec-summary {
+        background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px;
+        padding: 14px 18px; color: #1a1a1a;
     }
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# =============================================================================
-# OPTIONAL AI (Gemini free tier) — key read from Streamlit Secrets, hidden from users
-# =============================================================================
 try:
     GEMINI_KEY = st.secrets["GEMINI_API_KEY"]
     AI_AVAILABLE = True
@@ -58,17 +45,17 @@ except Exception:
     AI_AVAILABLE = False
 
 # =============================================================================
-# HEADER / LANDING SECTION
+# HEADER
 # =============================================================================
 st.markdown('<p class="main-header">📊 AI-Driven Business Analyst Dashboard</p>', unsafe_allow_html=True)
-st.markdown('<p class="sub-header">Apni sales CSV upload karo, seconds mein real profit, loss alerts aur AI-powered report paao — bilkul free.</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Apni sales CSV upload karo, seconds mein real profit, trends aur AI-powered report paao — bilkul free.</p>', unsafe_allow_html=True)
 
 with st.expander("ℹ️ Ye tool kya karta hai? (About)"):
     st.write(
-        "Ye tool aapke sales data (CSV file) ko analyze karke asli profit calculate karta hai — sirf revenue nahi, "
-        "balki product cost, platform fees, shipping, GST aur ad spend jaise sab expenses kaat kar. Ye batata hai "
-        "kaunse products loss mein hain, kaunsa platform format (Amazon/Meesho/Shopify) detect hua hai, aur returns/RTO "
-        "orders ko automatically exclude karke accurate numbers deta hai. Koi Excel formula ya coding knowledge nahi chahiye."
+        "Ye tool aapke sales data (CSV file) ko analyze karke asli profit calculate karta hai — cost, fees, shipping, "
+        "GST aur ad spend kaat kar. Jitne bhi columns aapki CSV mein honge (date, payment mode, category, discount, "
+        "return status), tool unhe use karke utni hi detailed report banayega. Koi column missing ho toh sirf wo "
+        "specific section skip hota hai — baaki poori report aapko milti hai, kabhi report dena mana nahi karte."
     )
 
 st.markdown("---")
@@ -78,36 +65,38 @@ business_mode = st.selectbox(
     ["Amazon / Flipkart Seller", "Instagram / Boutique Store", "Dropshipping / Shopify", "Small Local Business / Kirana"],
     index=0
 )
-st.caption(
-    "ℹ️ Business type report ki language/labels adjust karta hai. Column detection sab modes ke liye same "
-    "generic logic use karta hai — 'Detected Columns' panel mein hamesha verify karein."
-)
+st.caption("ℹ️ Business type sirf report ki language/labels adjust karta hai. Column detection sabke liye same hai — 'Detected Columns' panel mein verify karein.")
 st.markdown("---")
 
-# --- HOW IT WORKS ---
 st.markdown("### 🛠️ How to use this tool")
 col_step1, col_step2, col_step3 = st.columns(3)
 with col_step1:
-    st.info("##### 1. Upload CSV\nApni sales sheet ko .CSV format mein upload karein, ya neeche demo data try karein.")
+    st.info("##### 1. Upload CSV\nApni sales sheet ko .CSV format mein upload karein, ya demo data try karein.")
 with col_step2:
-    st.info(f"##### 2. Auto-Detect for {business_mode}\nTool aapke columns se Fees/GST/Ad/Cost/Platform detect karega.")
+    st.info(f"##### 2. Auto-Detect for {business_mode}\nTool jo bhi columns milein (date, payment, category, fees) unhe use karega.")
 with col_step3:
-    st.info("##### 3. Get Profit Report\nReal profit, Loss Alert, interactive charts aur AI Report dekho.")
+    st.info("##### 3. Get Full Report\nJitna data utni detailed report — kabhi report incomplete nahi milegi.")
 
 st.write("")
 
 # =============================================================================
-# DATA SOURCE: real upload OR built-in demo dataset
+# DEMO DATA
 # =============================================================================
 @st.cache_data
 def get_demo_data():
+    dates = pd.date_range("2026-08-01", periods=10, freq="3D")
     return pd.DataFrame({
+        "Order Date": dates,
         "Product Name": ["Cotton Kurti", "Denim Jacket", "Silk Saree", "Cotton Kurti", "Leather Bag",
                           "Denim Jacket", "Printed Tshirt", "Silk Saree", "Leather Bag", "Printed Tshirt"],
+        "Category": ["Ethnic Wear", "Western Wear", "Ethnic Wear", "Ethnic Wear", "Accessories",
+                     "Western Wear", "Western Wear", "Ethnic Wear", "Accessories", "Western Wear"],
         "Order Status": ["Delivered", "Delivered", "RTO", "Delivered", "Delivered",
                           "Cancelled", "Delivered", "Delivered", "Delivered", "Delivered"],
+        "Payment Mode": ["Prepaid", "COD", "COD", "Prepaid", "Prepaid", "COD", "Prepaid", "COD", "Prepaid", "COD"],
         "Sale Price": [899, 2499, 4999, 899, 1899, 2499, 499, 4999, 1899, 499],
         "Quantity": [3, 1, 1, 2, 1, 1, 5, 2, 2, 4],
+        "Discount": [50, 0, 200, 50, 0, 0, 20, 200, 0, 20],
         "Product Cost": [400, 1200, 2500, 400, 900, 1200, 200, 2500, 900, 200],
         "Referral Fee": [90, 250, 500, 90, 190, 250, 50, 500, 190, 50],
         "Shipping": [60, 90, 120, 60, 80, 90, 40, 120, 80, 40],
@@ -133,14 +122,12 @@ def load_csv(file):
 
 
 def clean_numeric_column(series):
-    """Convert messy numeric column to float while PRESERVING negative signs."""
     s = series.astype(str).str.strip()
     s = s.str.replace(r'[^\d.\-]', '', regex=True)
     return pd.to_numeric(s, errors='coerce').fillna(0)
 
 
 def detect_platform(columns):
-    """Signature-based guess only — verify with the detected-columns panel."""
     col_str = " ".join([str(c).strip().lower() for c in columns])
     if any(k in col_str for k in ["lineitem", "fulfillment status", "financial status"]):
         return "Shopify"
@@ -159,7 +146,7 @@ active_filename = None
 if use_demo:
     active_df = get_demo_data()
     active_filename = "demo_data.csv"
-    st.info("🎮 Demo data loaded — ye sample sales data hai taaki aap tool try kar sakein bina apni CSV ke.")
+    st.info("🎮 Demo data loaded — sample data hai taaki aap tool try kar sakein.")
 elif uploaded_file is not None:
     active_df = load_csv(uploaded_file)
     active_filename = uploaded_file.name
@@ -171,18 +158,17 @@ if active_df is not None:
             st.warning("⚠️ File mein koi rows nahi hain.")
             st.stop()
 
-        # --- PROGRESS STEPS ---
         progress_bar = st.progress(0, text="Reading file...")
-        time.sleep(0.2)
-        progress_bar.progress(25, text="Detecting columns...")
-        time.sleep(0.2)
+        time.sleep(0.15)
+        progress_bar.progress(20, text="Detecting columns...")
+        time.sleep(0.15)
 
         original_cols = list(df.columns)
         clean_cols = [str(c).strip().lower() for c in original_cols]
         col_mapping = dict(zip(clean_cols, original_cols))
-
         platform = detect_platform(original_cols)
 
+        # ---------------- Keyword dictionaries ----------------
         item_keywords = ['item', 'product', 'name', 'sku', 'title', 'particulars', 'description']
         rev_keywords = ['revenue', 'sales', 'amount', 'grand total', 'net sales', 'turnover', 'total', 'price', 'rate', 'sale price', 'mrp']
         qty_keywords = ['quantity', 'qty', 'units', 'sold', 'count', 'volume', 'pieces']
@@ -192,6 +178,10 @@ if active_df is not None:
         gst_keywords = ['gst', 'tax', 'vat']
         ad_keywords = ['ad spend', 'advertising', 'fb ads', 'marketing spend', 'ppc']
         status_keywords = ['order status', 'status', 'reason for credit entry', 'shipment status']
+        date_keywords = ['date', 'order date', 'purchase date', 'created at', 'timestamp']
+        payment_keywords = ['payment mode', 'payment method', 'payment type']
+        category_keywords = ['category', 'sub category', 'segment', 'department']
+        discount_keywords = ['discount', 'coupon', 'promo code', 'promo']
 
         used_cols = set()
 
@@ -214,6 +204,10 @@ if active_df is not None:
         gst_col = find_col(gst_keywords)
         ad_col = find_col(ad_keywords)
         status_col = find_col(status_keywords)
+        date_col = find_col(date_keywords)
+        payment_col = find_col(payment_keywords)
+        category_col = find_col(category_keywords)
+        discount_col = find_col(discount_keywords)
 
         item_auto = rev_auto = qty_auto = False
         if not item_col:
@@ -229,23 +223,28 @@ if active_df is not None:
             qty_col = 'auto_generated_qty'
             qty_auto = True
 
-        progress_bar.progress(50, text="Cleaning data & handling returns...")
-        time.sleep(0.2)
+        progress_bar.progress(40, text="Cleaning data & handling returns...")
+        time.sleep(0.15)
 
-        for col in [rev_col, qty_col, cost_col, fee_col, ship_col, gst_col, ad_col]:
+        for col in [rev_col, qty_col, cost_col, fee_col, ship_col, gst_col, ad_col, discount_col]:
             if col and col in df.columns:
                 df[col] = clean_numeric_column(df[col])
 
-        # RTO / Return exclusion
+        if date_col:
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+
         excluded_count = 0
         if status_col:
             status_lower = df[status_col].astype(str).str.lower()
             is_returned = status_lower.apply(lambda x: any(k in x for k in RETURN_STATUS_VALUES))
             excluded_count = int(is_returned.sum())
+            df_returns_only = df[is_returned].copy()
             df = df[~is_returned].copy()
+        else:
+            df_returns_only = pd.DataFrame()
 
-        progress_bar.progress(75, text="Calculating profit & margins...")
-        time.sleep(0.2)
+        progress_bar.progress(65, text="Calculating profit & margins...")
+        time.sleep(0.15)
 
         df['Real_Cost'] = df[cost_col] if cost_col else 0
         df['Real_Fee'] = df[fee_col] if fee_col else 0
@@ -273,7 +272,7 @@ if active_df is not None:
         loss_products = prod_summary[prod_summary['Real_Profit'] < 0]
 
         progress_bar.progress(100, text="Done!")
-        time.sleep(0.3)
+        time.sleep(0.2)
         progress_bar.empty()
 
         st.success(f"✔️ '{active_filename}' processed successfully! ({business_mode} mode)")
@@ -288,18 +287,25 @@ if active_df is not None:
             st.write(f"- **Shipping:** `{ship_col if ship_col else 'Not found — treated as ₹0'}`")
             st.write(f"- **GST/Tax:** `{gst_col if gst_col else 'Not found — treated as ₹0'}`")
             st.write(f"- **Ad Spend:** `{ad_col if ad_col else 'Not found — treated as ₹0'}`")
-            st.write(f"- **Order Status (for RTO/Return exclusion):** `{status_col if status_col else 'Not found'}`")
+            st.write(f"- **Order Status:** `{status_col if status_col else 'Not found'}`")
+            st.write(f"- **Order Date:** `{date_col if date_col else 'Not found'}`")
+            st.write(f"- **Payment Mode:** `{payment_col if payment_col else 'Not found'}`")
+            st.write(f"- **Category:** `{category_col if category_col else 'Not found'}`")
+            st.write(f"- **Discount:** `{discount_col if discount_col else 'Not found'}`")
             if status_col and excluded_count > 0:
                 st.info(f"ℹ️ Excluded **{excluded_count}** returned/cancelled/RTO orders from calculations.")
 
         if not has_expense_data:
-            st.warning("⚠️ Cost/fee/shipping/GST/ad column detect nahi hui — 'Real Profit' abhi sirf revenue ke barabar hai, actual expenses subtract nahi hue.")
+            st.warning("⚠️ Cost/fee/shipping/GST/ad column detect nahi hui — 'Real Profit' abhi sirf revenue ke barabar hai.")
 
         # =====================================================================
-        # TABS: Overview / Product Detail / Report
+        # TABS
         # =====================================================================
-        tab_overview, tab_products, tab_report = st.tabs(["📈 Overview", "📦 Product Detail", "📑 Report"])
+        tab_overview, tab_trends, tab_products, tab_report = st.tabs(
+            ["📈 Overview", "📅 Trends & Insights", "📦 Product Detail", "📑 Report"]
+        )
 
+        # ---------------- OVERVIEW ----------------
         with tab_overview:
             m1, m2, m3, m4 = st.columns(4)
             with m1:
@@ -347,10 +353,101 @@ if active_df is not None:
                         st.plotly_chart(fig2, use_container_width=True)
                     else:
                         st.caption("Fee breakdown ke liye cost/fee/GST/shipping/ad column chahiye.")
+                PLOTLY_OK = True
             except ImportError:
                 st.caption("Interactive charts ke liye 'plotly' package chahiye (requirements.txt mein add karein).")
                 st.bar_chart(df.groupby(item_col)['Real_Profit'].sum().sort_values(ascending=False))
+                PLOTLY_OK = False
 
+        # ---------------- TRENDS & INSIGHTS (new) ----------------
+        with tab_trends:
+            any_insight_shown = False
+
+            # --- Date-based trend ---
+            if date_col:
+                any_insight_shown = True
+                st.markdown("#### 📅 Revenue Trend Over Time")
+                trend_df = df.dropna(subset=[date_col]).groupby(df[date_col].dt.date)[rev_col].sum().reset_index()
+                trend_df.columns = ["Date", "Revenue"]
+                if PLOTLY_OK and len(trend_df) > 0:
+                    import plotly.express as px
+                    fig_trend = px.line(trend_df, x="Date", y="Revenue", markers=True)
+                    fig_trend.update_layout(height=350)
+                    st.plotly_chart(fig_trend, use_container_width=True)
+                elif len(trend_df) > 0:
+                    st.line_chart(trend_df.set_index("Date"))
+                if len(trend_df) >= 2:
+                    first_half = trend_df.iloc[:len(trend_df)//2]['Revenue'].sum()
+                    second_half = trend_df.iloc[len(trend_df)//2:]['Revenue'].sum()
+                    if first_half > 0:
+                        change = ((second_half - first_half) / first_half) * 100
+                        trend_word = "growth 📈" if change > 0 else "decline 📉"
+                        st.info(f"ℹ️ Period ke doosre half mein revenue mein **{abs(change):.1f}% {trend_word}** dikha pehle half ke comparison mein.")
+                st.markdown("---")
+            else:
+                st.caption("📅 Revenue trend dekhne ke liye CSV mein ek Date/Order Date column chahiye — abhi nahi mila.")
+
+            # --- Payment mode / COD-RTO breakdown ---
+            if payment_col:
+                any_insight_shown = True
+                st.markdown("#### 💳 Payment Mode Breakdown")
+                pay_summary = df.groupby(payment_col).agg(
+                    Orders=(payment_col, 'count'), Revenue=(rev_col, 'sum')
+                ).reset_index()
+                st.dataframe(pay_summary, use_container_width=True)
+
+                if status_col and len(df_returns_only) > 0:
+                    all_orders_by_payment = active_df.groupby(payment_col).size() if payment_col in active_df.columns else None
+                    if all_orders_by_payment is not None:
+                        returned_by_payment = df_returns_only.groupby(payment_col).size()
+                        rto_rate = (returned_by_payment / all_orders_by_payment * 100).fillna(0).round(1)
+                        st.write("**RTO/Return Rate by Payment Mode:**")
+                        st.dataframe(rto_rate.reset_index().rename(columns={0: "RTO Rate %"}), use_container_width=True)
+                        high_rto = rto_rate[rto_rate > 20]
+                        if len(high_rto) > 0:
+                            st.warning(f"⚠️ **{', '.join(high_rto.index.astype(str))}** mein RTO rate 20% se zyada hai — isse profit kaafi kam ho sakta hai.")
+                st.markdown("---")
+            else:
+                st.caption("💳 Payment mode insights ke liye CSV mein 'Payment Mode' column chahiye — abhi nahi mila.")
+
+            # --- Category-wise summary ---
+            if category_col:
+                any_insight_shown = True
+                st.markdown("#### 🗂️ Category-wise Performance")
+                cat_summary = df.groupby(category_col).agg(
+                    Revenue=(rev_col, 'sum'), Profit=('Real_Profit', 'sum'), Orders=(category_col, 'count')
+                ).sort_values("Profit", ascending=False).reset_index()
+                st.dataframe(cat_summary, use_container_width=True)
+                st.markdown("---")
+            else:
+                st.caption("🗂️ Category-wise breakdown ke liye CSV mein 'Category' column chahiye — abhi nahi mila.")
+
+            # --- Discount impact ---
+            if discount_col:
+                any_insight_shown = True
+                st.markdown("#### 🏷️ Discount Impact")
+                total_discount = float(df[discount_col].sum())
+                discount_pct_of_revenue = (total_discount / total_revenue * 100) if total_revenue > 0 else 0
+                st.write(f"Total discount diya gaya: **INR {total_discount:,.0f}** ({discount_pct_of_revenue:.1f}% of revenue)")
+                st.markdown("---")
+            else:
+                st.caption("🏷️ Discount impact ke liye CSV mein 'Discount' column chahiye — abhi nahi mila.")
+
+            # --- Pareto (80/20) insight ---
+            any_insight_shown = True
+            st.markdown("#### 🎯 Pareto Insight (80/20 Rule)")
+            pareto_df = prod_summary[[rev_col]].sort_values(rev_col, ascending=False).copy()
+            pareto_df['Cumulative %'] = (pareto_df[rev_col].cumsum() / pareto_df[rev_col].sum() * 100).round(1)
+            products_for_80 = (pareto_df['Cumulative %'] <= 80).sum() + 1
+            total_products = len(pareto_df)
+            if total_products > 0:
+                pct_products = (products_for_80 / total_products) * 100
+                st.info(f"ℹ️ Sirf **{products_for_80} product(s)** ({pct_products:.0f}% of your catalog) aapke **80% revenue** generate kar rahe hain. Inventory aur marketing inhi products pe focus karein.")
+
+            if not any_insight_shown:
+                st.info("Zyada insights ke liye apni CSV mein Date, Payment Mode, Category, ya Discount jaisi columns add karke dobara upload karein.")
+
+        # ---------------- PRODUCT DETAIL ----------------
         with tab_products:
             st.markdown("#### 📦 Full Product-wise Breakdown")
             display_df = prod_summary.reset_index().rename(columns={
@@ -359,7 +456,23 @@ if active_df is not None:
             st.dataframe(display_df.sort_values("Profit", ascending=False), use_container_width=True)
             st.caption("Table ko column header pe click karke sort kar sakte ho.")
 
+        # ---------------- REPORT ----------------
         with tab_report:
+            # --- Executive Summary ---
+            st.markdown("#### 📋 Executive Summary")
+            exec_lines = [
+                f"**Revenue:** INR {total_revenue:,.0f} across {total_orders} orders" +
+                (f", INR {total_profit:,.0f} real profit ({margin_pct:.1f}% margin)." if has_expense_data else " (profit not fully calculable — expense data missing)."),
+                f"**Top performer:** '{top_item}'.",
+            ]
+            if len(loss_products) > 0:
+                exec_lines.append(f"**Warning:** {len(loss_products)} product(s) currently operating at a loss, worst being '{worst_item}'.")
+            if date_col and 'change' in dir():
+                pass
+            exec_summary_html = "<br>".join(exec_lines)
+            st.markdown(f'<div class="exec-summary">{exec_summary_html}</div>', unsafe_allow_html=True)
+            st.markdown("---")
+
             def build_data_summary():
                 lines = [
                     f"Business type: {business_mode}",
@@ -372,6 +485,8 @@ if active_df is not None:
                 ]
                 if excluded_count:
                     lines.append(f"Excluded {excluded_count} returned/RTO/cancelled orders.")
+                if discount_col:
+                    lines.append(f"Total discount given: INR {float(df[discount_col].sum()):,.0f}")
                 return "\n".join(lines)
 
             ai_used = False
@@ -418,6 +533,18 @@ if active_df is not None:
                     st.success(action_plan)
                     report_text += action_plan
 
+            # --- Break-even calculator ---
+            st.markdown("---")
+            st.markdown("#### ⚖️ Break-Even Calculator (optional)")
+            fixed_costs = st.number_input("Aapke monthly fixed costs kitne hain? (rent, salary, etc — optional, ₹)", min_value=0, step=500)
+            if fixed_costs > 0:
+                profit_per_unit = (total_profit / total_units) if total_units > 0 else 0
+                if profit_per_unit > 0:
+                    breakeven_units = fixed_costs / profit_per_unit
+                    st.info(f"ℹ️ Break-even ke liye aapko approx **{breakeven_units:.0f} units** bechni hongi (based on current avg profit/unit of INR {profit_per_unit:.1f}).")
+                else:
+                    st.warning("⚠️ Abhi aapka average profit-per-unit zero ya negative hai, isliye break-even calculate nahi ho sakta — pehle per-unit profit positive karna hoga.")
+
             st.markdown("---")
             brand_name = st.text_input("Business/Brand name for exported report", value="My Business")
 
@@ -455,7 +582,7 @@ if active_df is not None:
                     st.caption(f"PDF export unavailable ({pdf_err}). Add 'fpdf2' to requirements.txt.")
 
         # =====================================================================
-        # FEEDBACK SECTION
+        # FEEDBACK
         # =====================================================================
         st.markdown("---")
         st.markdown("### 💬 Aapka Feedback")
@@ -481,18 +608,30 @@ else:
     st.info("💡 Upar CSV upload karein ya 'Try Demo Data' button dabayein.")
 
 # =============================================================================
-# FAQ SECTION
+# FAQ
 # =============================================================================
 st.markdown("---")
 st.markdown("### ❓ Frequently Asked Questions")
 with st.expander("Meri CSV upload nahi ho rahi / error aa raha hai?"):
-    st.write("Confirm karein file **.csv** format mein hai (Excel se 'Save As CSV' kar sakte ho), aur usme kam se kam ek product/item column aur ek revenue/price column ho.")
+    st.write("Confirm karein file **.csv** format mein hai, aur usme kam se kam ek product/item column aur ek revenue/price column ho.")
+with st.expander("Agar meri CSV mein Date/Payment/Category column nahi hai?"):
+    st.write("Koi baat nahi — jo columns available honge, unhi ke hisaab se report banegi. Extra columns hone par extra insights (trend chart, payment breakdown) apne aap add ho jaate hain, na hone par sirf wo section skip ho jata hai. Poori report kabhi nahi rukti.")
 with st.expander("Kaunse platforms support karte ho?"):
-    st.write("Amazon, Flipkart, Meesho, Shopify, ya koi bhi generic sales CSV — tool auto-detect karne ki koshish karta hai, but 'Detected Columns' panel mein hamesha verify kar lein.")
+    st.write("Amazon, Flipkart, Meesho, Shopify, ya koi bhi generic sales CSV — tool auto-detect karne ki koshish karta hai, 'Detected Columns' panel mein verify kar lein.")
 with st.expander("Mera data safe hai kya?"):
-    st.write("Aapki file sirf is session ke liye process hoti hai analysis ke liye. Filhal koi login/database nahi hai, isliye data kahin permanently store nahi hota.")
+    st.write("Aapki file sirf is session ke liye process hoti hai. Filhal koi login/database nahi hai, isliye data permanently store nahi hota.")
 with st.expander("Real Profit revenue jaisa hi kyun dikh raha hai?"):
-    st.write("Iska matlab hai aapki CSV mein cost/fee/GST/shipping jaisa koi expense column detect nahi hua. In columns ko add karke dobara upload karein accurate profit ke liye.")
+    st.write("Iska matlab hai aapki CSV mein cost/fee/GST/shipping jaisa koi expense column detect nahi hua. Add karke dobara upload karein.")
 
 st.markdown("---")
 st.success("🚀 **Built with ❤️ by Anirudh (Student Developer)**")
+PYEOF
+echo "Written."
+wc -l /mnt/user-data/outputs/app.py
+python3 -c "import ast; ast.parse(open('/mnt/user-data/outputs/app.py').read())" && echo "Syntax OK"
+Output
+
+Written.
+626 /mnt/user-data/outputs/app.py
+Syntax OK
+
