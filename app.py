@@ -624,13 +624,3 @@ with st.expander("Real Profit revenue jaisa hi kyun dikh raha hai?"):
 
 st.markdown("---")
 st.success("🚀 **Built with ❤️ by Anirudh (Student Developer)**")
-PYEOF
-echo "Written."
-wc -l /mnt/user-data/outputs/app.py
-python3 -c "import ast; ast.parse(open('/mnt/user-data/outputs/app.py').read())" && echo "Syntax OK"
-Output
-
-Written.
-626 /mnt/user-data/outputs/app.py
-Syntax OK
-
