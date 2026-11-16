@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
+import requests
 
 # =============================================================================
 # PAGE CONFIG + THEME
@@ -46,6 +47,48 @@ if "use_demo" not in st.session_state:
     st.session_state.use_demo = False
 
 # =============================================================================
+# REUSABLE FEEDBACK FORM FUNCTION (FORMSPREE CONNECTED)
+# =============================================================================
+def render_feedback_form(form_key):
+    st.markdown("---")
+    st.markdown("### 💬 Aapka Feedback")
+    with st.form(form_key, clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            usefulness = st.radio(
+                "Report kaisi lagi?",
+                ["👍 Useful", "👎 Not Useful"],
+                horizontal=True
+            )
+            willingness = st.number_input(
+                "Is tool ke liye aap kitna pay karenge? (₹)",
+                min_value=0,
+                step=50
+            )
+        with col2:
+            user_review = st.text_area(
+                "Aapka Review",
+                placeholder="Yahan apna review ya suggestion likhein..."
+            )
+
+        submit_btn = st.form_submit_button("Submit")
+        if submit_btn:
+            FORMSPREE_URL = "https://formspree.io/f/xzerejwe"
+            payload = {
+                "1_Useful_or_Not": usefulness,
+                "2_Kitna_Pay_Karoge": f"₹{willingness}",
+                "3_Review": user_review if user_review.strip() else "No text review"
+            }
+            try:
+                res = requests.post(FORMSPREE_URL, data=payload)
+                if res.status_code == 200:
+                    st.success("🎉 Shukriya! Aapka feedback save ho gaya hai.")
+                else:
+                    st.error("⚠️ Save nahi ho paya, please dobara try karein.")
+            except Exception:
+                st.error("⚠️ Network error! Dobara try karein.")
+
+# =============================================================================
 # OPTIONAL AI (Gemini) — key read from Streamlit Secrets
 # =============================================================================
 try:
@@ -87,6 +130,12 @@ with col_step3:
     st.info("##### 3. Get Full Report\nExecutive Summary, RTO Loss Alert, Trends aur AI Report.")
 
 st.write("")
+
+# =============================================================================
+# FEEDBACK SECTION 1: BEFORE CSV UPLOAD BLOCK
+# =============================================================================
+render_feedback_form("feedback_before_csv")
+st.markdown("---")
 
 # =============================================================================
 # DATA SOURCE: real upload OR built-in demo dataset
@@ -641,24 +690,9 @@ if active_df is not None:
                     st.caption(f"PDF export unavailable ({pdf_err}). Add 'fpdf2' to requirements.txt.")
 
         # =====================================================================
-        # FEEDBACK SECTION
+        # FEEDBACK SECTION 2: INSIDE CSV REPORT BLOCK
         # =====================================================================
-        st.markdown("---")
-        st.markdown("### 💬 Aapka Feedback")
-        fb_col1, fb_col2 = st.columns(2)
-        with fb_col1:
-            st.write("Report kaisi lagi?")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("👍 Useful"):
-                    st.success("Shukriya! Feedback note kar liya.")
-            with c2:
-                if st.button("👎 Not Useful"):
-                    st.info("Batao kya better ho sakta tha — DM karo Insta pe.")
-        with fb_col2:
-            willingness = st.number_input("Is tool ke liye aap kitna pay karenge? (₹, optional)", min_value=0, step=50)
-            if st.button("Submit"):
-                st.success(f"Shukriya! Aapka input (₹{willingness}) note kar liya gaya.")
+        render_feedback_form("feedback_inside_csv")
 
     except Exception as e:
         st.error(f"❌ Error processing file: {e}")
